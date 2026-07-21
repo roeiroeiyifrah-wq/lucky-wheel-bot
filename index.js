@@ -61,4 +61,38 @@ client.once("ready", async () => {
 });
 
 
+client.on("interactionCreate", async interaction => {
+
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === "wheel") {
+
+    if (interaction.channel.id !== WHEEL_CHANNEL_ID) {
+      return interaction.reply({
+        content: "❌ הפקודה עובדת רק בחדר הגלגל",
+        ephemeral: true
+      });
+    }
+
+    const button = new ButtonBuilder()
+      .setCustomId("spin")
+      .setLabel("🎡 סובב גלגל")
+      .setStyle(ButtonStyle.Primary);
+
+    const row = new ActionRowBuilder()
+      .addComponents(button);
+
+    const embed = new EmbedBuilder()
+      .setTitle("🎡 Lucky Wheel")
+      .setDescription(
+        "לחץ על הכפתור כדי לסובב את הגלגל!"
+      );
+
+    await interaction.reply({
+      embeds: [embed],
+      components: [row]
+    });
+  }
+
+});
 client.login(TOKEN);
