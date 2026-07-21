@@ -21,7 +21,7 @@ const client = new Client({
 const TOKEN = process.env.TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
 
-const WHEEL_CHANNEL_ID = "1529065973401915492";
+const WHEEL_CHANNEL_ID = "1529158985725251624";
 
 const COST = 1000;
 
