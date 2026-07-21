@@ -104,17 +104,11 @@ client.on("interactionCreate", async interaction => {
 
       const amount = points[interaction.user.id] || 0;
 
-      const msg = await interaction.reply({
+      return interaction.reply({
         content: `💎 יש לך ${amount} נקודות`,
-        ephemeral: false,
-        fetchReply: true
+        ephemeral: true
       });
 
-      setTimeout(() => {
-        msg.delete().catch(() => {});
-      }, 5000);
-
-      return;
     }
 
 
@@ -124,17 +118,11 @@ client.on("interactionCreate", async interaction => {
 
       if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
 
-        const msg = await interaction.reply({
+        return interaction.reply({
           content: "❌ אין לך הרשאה",
-          ephemeral: false,
-          fetchReply: true
+          ephemeral: true
         });
 
-        setTimeout(() => {
-          msg.delete().catch(() => {});
-        }, 2000);
-
-        return;
       }
 
 
@@ -174,16 +162,11 @@ client.on("interactionCreate", async interaction => {
 
       if (interaction.channel.id !== WHEEL_CHANNEL_ID) {
 
-        const msg = await interaction.reply({
+        return interaction.reply({
           content: "❌ הפקודה רק בחדר הגלגל",
-          fetchReply: true
+          ephemeral: true
         });
 
-        setTimeout(() => {
-          msg.delete().catch(() => {});
-        }, 5000);
-
-        return;
       }
 
 
@@ -230,16 +213,10 @@ client.on("interactionCreate", async interaction => {
 
     if (userPoints < COST) {
 
-      const msg = await interaction.reply({
+      return interaction.reply({
         content: "❌ אין לך מספיק נקודות",
-        fetchReply: true
+        ephemeral: true
       });
-
-      setTimeout(() => {
-        msg.delete().catch(() => {});
-      }, 5000);
-
-      return;
 
     }
 
@@ -247,10 +224,10 @@ client.on("interactionCreate", async interaction => {
     points[userId] -= COST;
 
 
-
     const roll = Math.random() * 100;
 
     let result;
+
 
 
     if (roll < 1) {
@@ -311,15 +288,10 @@ client.on("interactionCreate", async interaction => {
     savePoints();
 
 
-    const msg = await interaction.reply({
-      content: `🎡 ${interaction.user} סובב את הגלגל!\n\n${result}`,
-      fetchReply: true
+    return interaction.reply({
+      content: `🎡 סובבת את הגלגל!\n\n${result}`,
+      ephemeral: true
     });
-
-
-    setTimeout(() => {
-      msg.delete().catch(() => {});
-    }, 5000);
 
 
   }
