@@ -13,7 +13,9 @@ const {
 const fs = require("fs");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds
+  ]
 });
 
 const TOKEN = process.env.TOKEN;
@@ -22,11 +24,18 @@ const GUILD_ID = process.env.GUILD_ID;
 const WHEEL_CHANNEL_ID = "1529065973401915492";
 const COST = 1000;
 
+const STAFF_ROLE_ID = "1524447926213017720";
+const LUCK_ROLE_ID = "1529150264022401165";
+
+
 let points = {};
 
 if (fs.existsSync("points.json")) {
-  points = JSON.parse(fs.readFileSync("points.json"));
+  points = JSON.parse(
+    fs.readFileSync("points.json")
+  );
 }
+
 
 function savePoints() {
   fs.writeFileSync(
@@ -34,6 +43,7 @@ function savePoints() {
     JSON.stringify(points, null, 2)
   );
 }
+
 
 const commands = [
   new SlashCommandBuilder()
@@ -63,6 +73,7 @@ const commands = [
 
 
 client.once("ready", async () => {
+
   console.log(`מחובר בתור ${client.user.tag}`);
 
   const rest = new REST({ version: "10" })
@@ -77,10 +88,10 @@ client.once("ready", async () => {
       body: commands
     }
   );
+
 });
-
-
 client.on("interactionCreate", async interaction => {
+
 
   if (interaction.isChatInputCommand()) {
 
@@ -99,16 +110,29 @@ client.on("interactionCreate", async interaction => {
 
     if (interaction.commandName === "addpoints") {
 
+      if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+
+        return interaction.reply({
+          content: "❌ אין לך הרשאה להוסיף נקודות",
+          ephemeral: true
+        });
+
+      }
+
+
       const user = interaction.options.getUser("user");
       const amount = interaction.options.getInteger("amount");
+
 
       if (!points[user.id]) {
         points[user.id] = 0;
       }
 
+
       points[user.id] += amount;
 
       savePoints();
+
 
       return interaction.reply(
         `✅ נוספו ${amount} נקודות ל־${user}`
@@ -117,13 +141,17 @@ client.on("interactionCreate", async interaction => {
     }
 
 
+
     if (interaction.commandName === "wheel") {
 
+
       if (interaction.channel.id !== WHEEL_CHANNEL_ID) {
+
         return interaction.reply({
           content: "❌ הפקודה רק בחדר הגלגל",
           ephemeral: true
         });
+
       }
 
 
@@ -140,7 +168,7 @@ client.on("interactionCreate", async interaction => {
       const embed = new EmbedBuilder()
         .setTitle("🎡 Lucky Wheel")
         .setDescription(
-          "לחץ על הכפתור לסובב!\n💎 מחיר: 1000 נקודות"
+          "לחץ על הכפתור כדי לסובב!\n💎 מחיר: 1000 נקודות"
         );
 
 
@@ -154,33 +182,40 @@ client.on("interactionCreate", async interaction => {
   }
 
 
+
   if (interaction.isButton()) {
+
 
     if (interaction.customId !== "spin") return;
 
 
     const userId = interaction.user.id;
+    const member = interaction.member;
 
-    const amount = points[userId] || 0;
+
+    const userPoints = points[userId] || 0;
 
 
-    if (amount < COST) {
+    if (userPoints < COST) {
+
       return interaction.reply({
         content: "❌ אין לך מספיק נקודות",
         ephemeral: true
       });
+
     }
 
 
     points[userId] -= COST;
 
 
+
     const prizes = [
-      0,
-      500,
-      1000,
-      2000,
-      5000
+      { type: "points", amount: 500 },
+      { type: "points", amount: 1000 },
+      { type: "points", amount: 2000 },
+      { type: "points", amount: 5000 },
+      { type: "luck" }
     ];
 
 
@@ -188,14 +223,49 @@ client.on("interactionCreate", async interaction => {
       prizes[Math.floor(Math.random() * prizes.length)];
 
 
-    points[userId] += prize;
+
+    if (prize.type === "luck") {
+
+
+      if (member.roles.cache.has(LUCK_ROLE_ID)) {
+
+
+        points[userId] += 500;
+
+        savePoints();
+
+
+        return interaction.reply(
+          `🎡 כבר יש לך רול מזל!\nקיבלת במקום 💎 500 נקודות`
+        );
+
+      } else {
+
+
+        await member.roles.add(LUCK_ROLE_ID);
+
+        savePoints();
+
+
+        return interaction.reply(
+          `🎉 זכית ברול מזל! 🎡`
+        );
+
+      }
+
+    }
+
+
+
+    points[userId] += prize.amount;
 
     savePoints();
 
 
     return interaction.reply(
-      `🎡 ${interaction.user} סובב!\nזכית ב־💎 ${prize} נקודות`
+      `🎡 סובבת את הגלגל!\nזכית ב־💎 ${prize.amount} נקודות`
     );
+
 
   }
 
