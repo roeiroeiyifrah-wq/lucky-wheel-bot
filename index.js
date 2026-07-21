@@ -69,6 +69,7 @@ const commands = [
         .setDescription("כמות נקודות")
         .setRequired(true)
     )
+
 ].map(command => command.toJSON());
 
 
@@ -92,7 +93,6 @@ client.once("ready", async () => {
 });
 client.on("interactionCreate", async interaction => {
 
-
   if (interaction.isChatInputCommand()) {
 
 
@@ -108,15 +108,14 @@ client.on("interactionCreate", async interaction => {
     }
 
 
+
     if (interaction.commandName === "addpoints") {
 
       if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
-
         return interaction.reply({
-          content: "❌ אין לך הרשאה להוסיף נקודות",
+          content: "❌ אין לך הרשאה",
           ephemeral: true
         });
-
       }
 
 
@@ -146,12 +145,10 @@ client.on("interactionCreate", async interaction => {
 
 
       if (interaction.channel.id !== WHEEL_CHANNEL_ID) {
-
         return interaction.reply({
           content: "❌ הפקודה רק בחדר הגלגל",
           ephemeral: true
         });
-
       }
 
 
@@ -185,24 +182,20 @@ client.on("interactionCreate", async interaction => {
 
   if (interaction.isButton()) {
 
-
     if (interaction.customId !== "spin") return;
 
 
     const userId = interaction.user.id;
     const member = interaction.member;
 
-
     const userPoints = points[userId] || 0;
 
 
     if (userPoints < COST) {
-
       return interaction.reply({
         content: "❌ אין לך מספיק נקודות",
         ephemeral: true
       });
-
     }
 
 
@@ -211,11 +204,11 @@ client.on("interactionCreate", async interaction => {
 
 
     const prizes = [
-      { type: "points", amount: 500 },
-      { type: "points", amount: 1000 },
-      { type: "points", amount: 2000 },
-      { type: "points", amount: 5000 },
-      { type: "luck" }
+      { name: "💎 500 נקודות", type: "points", amount: 500 },
+      { name: "💎 1000 נקודות", type: "points", amount: 1000 },
+      { name: "💎 2000 נקודות", type: "points", amount: 2000 },
+      { name: "💎 5000 נקודות", type: "points", amount: 5000 },
+      { name: "🎡 רול מזל", type: "luck" }
     ];
 
 
@@ -224,52 +217,60 @@ client.on("interactionCreate", async interaction => {
 
 
 
+    let result;
+
+
+
     if (prize.type === "luck") {
 
 
       if (member.roles.cache.has(LUCK_ROLE_ID)) {
 
-
         points[userId] += 500;
 
-        savePoints();
-
-
-        return interaction.reply(
-          `🎡 כבר יש לך רול מזל!\nקיבלת במקום 💎 500 נקודות`
-        );
+        result =
+          "🎡 כבר יש לך רול מזל!\nקיבלת במקום 💎 500 נקודות";
 
       } else {
 
-
         await member.roles.add(LUCK_ROLE_ID);
 
-        savePoints();
-
-
-        return interaction.reply(
-          `🎉 זכית ברול מזל! 🎡`
-        );
+        result =
+          "🎉 זכית ברול מזל! 🎡";
 
       }
+
+
+    } else {
+
+      points[userId] += prize.amount;
+
+      result =
+        `🏆 זכית ב־${prize.name}`;
 
     }
 
 
-
-    points[userId] += prize.amount;
-
     savePoints();
 
 
-    return interaction.reply(
-      `🎡 סובבת את הגלגל!\nזכית ב־💎 ${prize.amount} נקודות`
-    );
+
+    const msg = await interaction.reply({
+      content:
+        `🎡 ${interaction.user} סובב את הגלגל!\n\n${result}`,
+      fetchReply: true
+    });
+
+
+    setTimeout(() => {
+      msg.delete().catch(() => {});
+    }, 5000);
 
 
   }
 
 });
+
 
 
 client.login(TOKEN);
