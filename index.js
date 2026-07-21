@@ -22,10 +22,13 @@ const TOKEN = process.env.TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
 
 const WHEEL_CHANNEL_ID = "1529065973401915492";
+
 const COST = 1000;
 
 const STAFF_ROLE_ID = "1524447926213017720";
+
 const LUCK_ROLE_ID = "1529150264022401165";
+const SPECIAL_ROLE_ID = "1529155524028010637";
 
 
 let points = {};
@@ -93,6 +96,7 @@ client.once("ready", async () => {
 });
 client.on("interactionCreate", async interaction => {
 
+
   if (interaction.isChatInputCommand()) {
 
 
@@ -100,22 +104,37 @@ client.on("interactionCreate", async interaction => {
 
       const amount = points[interaction.user.id] || 0;
 
-      return interaction.reply({
+      const msg = await interaction.reply({
         content: `💎 יש לך ${amount} נקודות`,
-        ephemeral: true
+        ephemeral: false,
+        fetchReply: true
       });
 
+      setTimeout(() => {
+        msg.delete().catch(() => {});
+      }, 5000);
+
+      return;
     }
 
 
 
     if (interaction.commandName === "addpoints") {
 
+
       if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
-        return interaction.reply({
+
+        const msg = await interaction.reply({
           content: "❌ אין לך הרשאה",
-          ephemeral: true
+          ephemeral: false,
+          fetchReply: true
         });
+
+        setTimeout(() => {
+          msg.delete().catch(() => {});
+        }, 2000);
+
+        return;
       }
 
 
@@ -133,9 +152,18 @@ client.on("interactionCreate", async interaction => {
       savePoints();
 
 
-      return interaction.reply(
-        `✅ נוספו ${amount} נקודות ל־${user}`
-      );
+      const msg = await interaction.reply({
+        content: `✅ נוספו ${amount} נקודות ל־${user}`,
+        fetchReply: true
+      });
+
+
+      setTimeout(() => {
+        msg.delete().catch(() => {});
+      }, 2000);
+
+
+      return;
 
     }
 
@@ -145,10 +173,17 @@ client.on("interactionCreate", async interaction => {
 
 
       if (interaction.channel.id !== WHEEL_CHANNEL_ID) {
-        return interaction.reply({
+
+        const msg = await interaction.reply({
           content: "❌ הפקודה רק בחדר הגלגל",
-          ephemeral: true
+          fetchReply: true
         });
+
+        setTimeout(() => {
+          msg.delete().catch(() => {});
+        }, 5000);
+
+        return;
       }
 
 
@@ -182,20 +217,30 @@ client.on("interactionCreate", async interaction => {
 
   if (interaction.isButton()) {
 
+
     if (interaction.customId !== "spin") return;
 
 
     const userId = interaction.user.id;
     const member = interaction.member;
 
+
     const userPoints = points[userId] || 0;
 
 
     if (userPoints < COST) {
-      return interaction.reply({
+
+      const msg = await interaction.reply({
         content: "❌ אין לך מספיק נקודות",
-        ephemeral: true
+        fetchReply: true
       });
+
+      setTimeout(() => {
+        msg.delete().catch(() => {});
+      }, 5000);
+
+      return;
+
     }
 
 
@@ -203,50 +248,62 @@ client.on("interactionCreate", async interaction => {
 
 
 
-    const prizes = [
-      { name: "💎 500 נקודות", type: "points", amount: 500 },
-      { name: "💎 1000 נקודות", type: "points", amount: 1000 },
-      { name: "💎 2000 נקודות", type: "points", amount: 2000 },
-      { name: "💎 5000 נקודות", type: "points", amount: 5000 },
-      { name: "🎡 רול מזל", type: "luck" }
-    ];
-
-
-    const prize =
-      prizes[Math.floor(Math.random() * prizes.length)];
-
-
+    const roll = Math.random() * 100;
 
     let result;
 
 
+    if (roll < 1) {
 
-    if (prize.type === "luck") {
+      if (member.roles.cache.has(SPECIAL_ROLE_ID)) {
 
-
-      if (member.roles.cache.has(LUCK_ROLE_ID)) {
-
-        points[userId] += 500;
-
-        result =
-          "🎡 כבר יש לך רול מזל!\nקיבלת במקום 💎 500 נקודות";
+        points[userId] += 1000;
+        result = "🎁 כבר יש לך פרס מיוחד! קיבלת 💎 1000 נקודות";
 
       } else {
 
-        await member.roles.add(LUCK_ROLE_ID);
-
-        result =
-          "🎉 זכית ברול מזל! 🎡";
+        await member.roles.add(SPECIAL_ROLE_ID);
+        result = "🎁 זכית בפרס מיוחד!";
 
       }
 
 
+    } else if (roll < 6) {
+
+      if (member.roles.cache.has(LUCK_ROLE_ID)) {
+
+        points[userId] += 500;
+        result = "🎡 כבר יש לך רול מזל! קיבלת 💎 500 נקודות";
+
+      } else {
+
+        await member.roles.add(LUCK_ROLE_ID);
+        result = "🎡 זכית ברול מזל!";
+
+      }
+
+
+    } else if (roll < 14) {
+
+      points[userId] += 1000;
+      result = "💎 זכית ב־1000 נקודות";
+
+
+    } else if (roll < 39) {
+
+      points[userId] += 500;
+      result = "💎 זכית ב־500 נקודות";
+
+
+    } else if (roll < 64) {
+
+      points[userId] += 100;
+      result = "💎 זכית ב־100 נקודות";
+
+
     } else {
 
-      points[userId] += prize.amount;
-
-      result =
-        `🏆 זכית ב־${prize.name}`;
+      result = "😭 לא זכית הפעם";
 
     }
 
@@ -254,10 +311,8 @@ client.on("interactionCreate", async interaction => {
     savePoints();
 
 
-
     const msg = await interaction.reply({
-      content:
-        `🎡 ${interaction.user} סובב את הגלגל!\n\n${result}`,
+      content: `🎡 ${interaction.user} סובב את הגלגל!\n\n${result}`,
       fetchReply: true
     });
 
@@ -270,7 +325,6 @@ client.on("interactionCreate", async interaction => {
   }
 
 });
-
 
 
 client.login(TOKEN);
